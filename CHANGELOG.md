@@ -8,3 +8,4 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Initialize yosys console
 - History of commands
 - Demo
+- Pass options to yosys

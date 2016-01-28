@@ -93,7 +93,10 @@ $.md.stage('all_ready').subscribe(function(done) {
         this.appendOutput(ys.print_buffer);
         cb();
       }.bind(this));
-      ys.verbose = true;
+
+      ys.verbose = this.settings.yosys.verbose | false;
+      ys.logprint= this.settings.yosys.logprint | false;
+      ys.echo = this.settings.yosys.echo | false;
       this.yosys.ys = ys;
     },
     appendOutput(buffer) {
