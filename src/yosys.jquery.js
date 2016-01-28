@@ -1,53 +1,3 @@
-/*
-var ys = null;
-$.md.stage('all_ready').subscribe(function(done) {
-  var location = window.location.href.split('/');
-  var page = location[location.length - 1];
-
-  if(page === 'yosys.md') {
-    var initNavigation = function($navigation) {
-      $('a.fullscreen', $navigation).on('click', function(e) {
-        e.preventDefault();
-        $(this).hide();
-        $(this).siblings('.smallscreen').show();
-
-        $yosys = $(this).closest('#yosys-wrapper');
-        $yosys.addClass('fullscreen');
-
-        var height = $(window).height() - $('#input-wrapper', $yosys).height();
-        $('textarea#yosys-output', $yosys).height(height);
-        $('#input-wrapper input', $yosys).focus();
-      });
-
-      $('a.smallscreen', $navigation).on('click', function(e) {
-        e.preventDefault();
-        $(this).hide();
-        $(this).siblings('.fullscreen').show();
-
-        $yosys = $(this).closest('#yosys-wrapper');
-        $yosys.removeClass('fullscreen');
-
-        $('textarea#yosys-output', $yosys).height(480);
-        $('#input-wrapper input', $yosys).focus();
-      });
-    }
-
-    var appendOutput = function (output) {
-      var $output = $('textarea#yosys-output');
-      var text = $output.val();
-      text += '\n\n' + output.trim();
-      $output.val(text);
-
-      $output.scrollTop($output[0].scrollHeight - $output.height());
-    }
-  }
-
-  done();
-});
-*/
-
-// the semi-colon before function invocation is a safety net against concatenated
-// scripts and/or other plugins which may not be closed properly.
 ;(function($, window, document, undefined) {
   "use strict";
 
@@ -87,10 +37,11 @@ $.md.stage('all_ready').subscribe(function(done) {
         this.settings.done(this.element);
       }.bind(this));
     },
+
     initYosys(cb) {
       YosysJS.load_viz();
       var ys = YosysJS.create('ys_iframe', function() {
-        this.appendOutput(ys.print_buffer);
+        this.yosys.elements.output.val(ys.print_buffer);
         cb();
       }.bind(this));
 
@@ -99,6 +50,7 @@ $.md.stage('all_ready').subscribe(function(done) {
       ys.echo = this.settings.yosys.echo | false;
       this.yosys.ys = ys;
     },
+
     appendOutput(buffer) {
       var output = this.yosys.elements.output;
       var current = output.val();
@@ -107,6 +59,7 @@ $.md.stage('all_ready').subscribe(function(done) {
 
       output.scrollTop(output[0].scrollHeight - output.height());
     },
+
     attachInputHandler() {
       var yosys = this.yosys;
       var input = yosys.elements.input;
