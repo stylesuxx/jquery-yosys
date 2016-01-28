@@ -1,0 +1,92 @@
+body {
+  padding-top: 10px;
+}
+
+#yosys {
+  position: relative;
+  background-color: black;
+  font-family: monospace;
+}
+
+#yosys.fullscreen {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+}
+
+#yosys #input-wrapper {
+  line-height: 40px;
+  font-size: 16px;
+  position: relative;
+  border-top: 1px solid #666;
+  margin-top: 4px;
+}
+
+#yosys #input-wrapper p {
+  margin: 0px;
+}
+
+#yosys #input-wrapper .left {
+  width: 105px;
+  text-align: center
+}
+
+#yosys #output-wrapper {
+  overflow: hidden;
+  height: 480px;
+  padding-left: 10px;
+}
+
+#yosys #output-wrapper textarea {
+  width: 100%;
+  min-height: 16px;
+  height: 100%;
+  padding: 0px;
+  margin: 0px;
+  border: 0px;
+  resize: vertical;
+  color: white;
+  background-color: transparent;
+  right: -15px;
+  overflow: auto;
+}
+
+#yosys #input-wrapper .right {
+  width: 100%;
+  padding-left: 105px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#yosys #input-wrapper .right input {
+  margin: 0px;
+  padding: 0px;
+  border: 0px;
+  color: white;
+  width: 100%;
+  background-color: transparent;
+}
+
+#yosys input:focus,
+#yosys textarea:focus {
+  outline: none;
+}
+
+#yosys nav {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+}
+
+#yosys nav a {
+  color: white;
+  opacity: 0.3;
+}
+
+#yosys nav a:hover {
+  opacity: 1;
+}
