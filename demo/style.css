@@ -6,6 +6,7 @@ body {
   position: relative;
   background-color: black;
   font-family: monospace;
+  height: 524px;
 }
 
 #yosys.fullscreen {
@@ -22,7 +23,7 @@ body {
   font-size: 16px;
   position: relative;
   border-top: 1px solid #666;
-  margin-top: 4px;
+  margin-top: -40px;
 }
 
 #yosys #input-wrapper p {
@@ -36,22 +37,30 @@ body {
 
 #yosys #output-wrapper {
   overflow: hidden;
-  height: 480px;
   padding-left: 10px;
+  height: 100%;
+  padding-bottom: 44px;
 }
 
 #yosys #output-wrapper textarea {
   width: 100%;
-  min-height: 16px;
   height: 100%;
   padding: 0px;
   margin: 0px;
   border: 0px;
-  resize: vertical;
+  resize: none;
   color: white;
   background-color: transparent;
-  right: -15px;
-  overflow: auto;
+}
+
+#yosys #output-wrapper textarea::-webkit-scrollbar {
+  background: black;
+  width: 10px;
+}
+
+#yosys #output-wrapper textarea::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.5);
 }
 
 #yosys #input-wrapper .right {
@@ -78,8 +87,8 @@ body {
 
 #yosys nav {
   position: absolute;
-  top: 5px;
-  right: 10px;
+  top: 7px;
+  right: 14px;
 }
 
 #yosys nav a {

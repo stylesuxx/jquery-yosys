@@ -4,7 +4,12 @@
   var pluginName = "yosys",
   defaults = {
     done: null,
-    propertyName: "value"
+    yosis: {
+      verbose: false,
+      logger: false,
+      echo: false
+    },
+    navigation: true
   };
 
   function Plugin(element, options) {
@@ -19,8 +24,9 @@
     init: function() {
       this.yosys = {
         elements: {
+          navigation: $('.yosys-navigation', this.element),
           output: $('textarea.yosys-output', this.element),
-          input: $('input.yosys-input', this.element)
+          input: $('input.yosys-input', this.element),
         },
         history: []
       };
@@ -31,11 +37,38 @@
       if(this.yosys.elements.input.length < 1) {
         throw('Error: No input with yosys-input class found!');
       }
+      if(this.yosys.elements.navigation.length < 1) {
+        throw('Error: No container with yosys-navigation class found!');
+      }
 
       this.initYosys(function() {
         this.attachInputHandler();
+        this.initNavigation();
         this.settings.done(this.element);
       }.bind(this));
+    },
+
+    initNavigation() {
+      var parent = this.element;
+      var $resize = $('<div/>', { class: 'resize' })
+        .append($('<a/>', { href: '#', class: 'fullscreen' })
+          .append($('<span/>', { class: 'glyphicon glyphicon-resize-full' })))
+        .append($('<a/>', { href: '#', class: 'smallscreen', style: 'display: none;' })
+          .append($('<span/>', { class: 'glyphicon glyphicon-resize-small' })));
+
+      $('.fullscreen', $resize).on('click', function() {
+        $(this).hide();
+        $('.smallscreen', $resize).show();
+        $(parent).addClass('fullscreen');
+      });
+
+      $('.smallscreen', $resize).on('click', function() {
+        $(this).hide();
+        $('.fullscreen', $resize).show();
+        $(parent).removeClass('fullscreen');
+      });
+
+      this.yosys.elements.navigation.append($resize);
     },
 
     initYosys(cb) {
@@ -45,9 +78,9 @@
         cb();
       }.bind(this));
 
-      ys.verbose = this.settings.yosys.verbose | false;
-      ys.logprint= this.settings.yosys.logprint | false;
-      ys.echo = this.settings.yosys.echo | false;
+      ys.verbose = this.settings.yosys.verbose;
+      ys.logprint= this.settings.yosys.logprint;
+      ys.echo = this.settings.yosys.echo;
       this.yosys.ys = ys;
     },
 

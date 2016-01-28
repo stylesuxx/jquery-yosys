@@ -6,6 +6,7 @@ The container has to have at least the following Structure:
 
 ```HTML
 <div id="yosys">
+  <nav class="yosys-navigation"></div>
   <textarea class="yosys-output"></textarea>
   <input class="yosys-input">
 </div>
