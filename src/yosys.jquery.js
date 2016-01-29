@@ -28,7 +28,8 @@
           output: $('textarea.yosys-output', this.element),
           input: $('input.yosys-input', this.element),
         },
-        history: []
+        history: [],
+        files: {}
       };
 
       if(this.yosys.elements.output.length < 1) {
@@ -49,12 +50,38 @@
     },
 
     initNavigation() {
+      var that = this;
       var parent = this.element;
+      var $newFile = $('<div/>', { class: 'resize' })
+        .append($('<a/>', { href: '#', class: 'new-file' })
+          .append($('<span/>', { class: 'glyphicon glyphicon-plus' })));
+
       var $resize = $('<div/>', { class: 'resize' })
         .append($('<a/>', { href: '#', class: 'fullscreen' })
           .append($('<span/>', { class: 'glyphicon glyphicon-resize-full' })))
         .append($('<a/>', { href: '#', class: 'smallscreen', style: 'display: none;' })
           .append($('<span/>', { class: 'glyphicon glyphicon-resize-small' })));
+
+      $('.new-file', $newFile).on('click', function() {
+        if($('.add-file', parent).length > 0) return;
+
+        var $addFile = $('<div/>', { class: 'add-file'} )
+          .append($('<input/>', { placeholder: 'filename [ENTER]' }))
+        $(parent).append($addFile);
+        $('input', $addFile).focus();
+
+        $('input', $addFile).keydown(function(e) {
+          if(e.which == 13) {
+            var name = $('input', $addFile).val();
+            if(name != "") {
+              that.addFile(name, function() {
+                $addFile.remove();
+              });
+            }
+            return false;
+          }
+        });
+      });
 
       $('.fullscreen', $resize).on('click', function() {
         $(this).hide();
@@ -68,7 +95,47 @@
         $(parent).removeClass('fullscreen');
       });
 
+      this.yosys.elements.navigation.append($newFile);
       this.yosys.elements.navigation.append($resize);
+    },
+
+    addFile(name, cb) {
+      var ys = this.yosys.ys;
+      var parent = this.element;
+      var files = this.yosys.files;
+      var navigation = this.yosys.elements.navigation;
+
+      if(!files[name]) {
+        files[name] = true;
+        ys.write_file(name, '');
+        var $file = $('<div/>', { class: 'file'})
+          .append($('<a/>', { href: '#', file: name, text: name }));
+        navigation.prepend($file);
+
+        $('a', $file).on('click', function(e) {
+          var file = $(this).attr('file');
+          var text = ys.read_file(file);
+          var $editor = $('<div/>', { class: 'editor' })
+            .append($('<textarea/>').val(text)).hide();
+
+          $(parent).append($editor);
+          $editor.fadeIn('fast');
+          $('textarea', $editor).focus();
+          $('textarea', $editor).on('click', function() {
+            return false;
+          });
+          $editor.on('click', function() {
+            $editor.fadeOut('fast', function() {
+              var text = $('textarea', $editor).val();
+              ys.write_file(name, text);
+              $editor.remove();
+            });
+          })
+        });
+        cb();
+      }
+
+      $('a', $file).click();
     },
 
     initYosys(cb) {
@@ -96,8 +163,8 @@
     attachInputHandler() {
       var yosys = this.yosys;
       var input = yosys.elements.input;
-
       var index = 0;
+
       var enterHandler = function() {
         var command = input.val();
         if(command == '') return;

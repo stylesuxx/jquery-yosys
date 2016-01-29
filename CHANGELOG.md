@@ -9,3 +9,4 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - History of commands
 - Demo
 - Pass options to yosys
+- Add multiple files
