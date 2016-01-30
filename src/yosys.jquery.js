@@ -1,6 +1,68 @@
 ;(function($, window, document, undefined) {
   "use strict";
 
+  function Input($input, commandCB) {
+    this.$input = $input;
+    this.history = [];
+    this.index = history.length;
+    this.commandCB = commandCB;
+
+    this.registerHandlers = function() {
+      this.$input.keydown(function(e) {
+        switch(e.which) {
+          case 13: this.enterHandler(); break;
+          case 38: this.upHandler(); break;
+          case 40: this.downHandler(); break;
+        }
+      }.bind(this));
+    };
+
+    this.enterHandler = function() {
+      var command = this.$input.val();
+      if(command == '') return;
+
+      this.history.push(command);
+      this.index = this.history.length - 1;
+      this.$input.val('');
+      this.commandCB(command);
+    }
+
+    this.upHandler = function() {
+      if(this.index > -1) {
+        this.$input.val(this.history[this.index]);
+        this.index = (this.index > 0) ? --this.index : 0;
+      }
+    }
+
+    this.downHandler = function() {
+      var command = '';
+      if(this.index < (this.history.length - 1)) {
+        command = this.history[++this.index];
+      }
+      this.$input.val(command);
+    }
+
+    this.registerHandlers();
+  }
+
+  function Output($output, text) {
+    this.$output = $output;
+    this.$output.val(text);
+
+    this.append = function(text) {
+      var current = this.$output.val();
+      current +=  '\n\n' + text.trim();
+      this.$output.val(current);
+
+      var scrollTo = this.$output[0].scrollHeight - this.$output.height();
+      this.$output.scrollTop(scrollTo);
+    };
+
+    this.clear = function() {
+      this.$output.val('');
+    }
+  }
+
   var pluginName = "yosys",
   defaults = {
     done: null,
@@ -42,8 +104,12 @@
         throw('Error: No container with yosys-navigation class found!');
       }
 
-      this.initYosys(function() {
-        this.attachInputHandler();
+      this.initYosys(function(ys) {
+        var ys = ys;
+        var output = new Output(this.yosys.elements.output, ys.print_buffer);
+        var input = new Input(this.yosys.elements.input, function(command) {
+          output.append(ys.run(command));
+        });
         this.initNavigation();
         this.settings.done(this.element);
       }.bind(this));
@@ -100,6 +166,7 @@
     },
 
     addFile(name, cb) {
+      var that = this;
       var ys = this.yosys.ys;
       var parent = this.element;
       var files = this.yosys.files;
@@ -114,7 +181,7 @@
 
         $('a', $file).on('click', function(e) {
           var file = $(this).attr('file');
-          var text = ys.read_file(file);
+          var text = that.loadFile(file);
           var $editor = $('<div/>', { class: 'editor' })
             .append($('<textarea/>').val(text)).hide();
 
@@ -127,7 +194,7 @@
           $editor.on('click', function() {
             $editor.fadeOut('fast', function() {
               var text = $('textarea', $editor).val();
-              ys.write_file(name, text);
+              that.saveFile(file, text)
               $editor.remove();
             });
           })
@@ -138,68 +205,46 @@
       $('a', $file).click();
     },
 
+    saveFile(name, content) {
+      var ys = this.yosys.ys;
+      ys.write_file(name, content);
+
+      if(localStorage) {
+        var files =  localStorage.getItem('files') ? JSON.parse(localStorage.getItem('files')) : {};
+        files[name] = content;
+        localStorage.setItem('files', JSON.stringify(files));
+      }
+    },
+
+    loadFile(name) {
+      var ys = this.yosys.ys;
+      return ys.read_file(name);
+    },
+
+    loadSavedFiles() {
+      if(localStorage) {
+        // Load from local store
+        var files = localStorage.getItem('files') ? JSON.parse(localStorage.getItem('files')) : {};
+
+        // Write to yosys fs
+        // Append menu item
+      }
+    },
+
+    deleteFile(name) {
+
+    },
+
     initYosys(cb) {
       YosysJS.load_viz();
       var ys = YosysJS.create('ys_iframe', function() {
-        this.yosys.elements.output.val(ys.print_buffer);
-        cb();
+        cb(ys);
       }.bind(this));
 
       ys.verbose = this.settings.yosys.verbose;
       ys.logprint= this.settings.yosys.logprint;
       ys.echo = this.settings.yosys.echo;
       this.yosys.ys = ys;
-    },
-
-    appendOutput(buffer) {
-      var output = this.yosys.elements.output;
-      var current = output.val();
-      current += '\n\n' + buffer.trim();
-      output.val(current);
-
-      output.scrollTop(output[0].scrollHeight - output.height());
-    },
-
-    attachInputHandler() {
-      var yosys = this.yosys;
-      var input = yosys.elements.input;
-      var index = 0;
-
-      var enterHandler = function() {
-        var command = input.val();
-        if(command == '') return;
-
-        yosys.history.push(command);
-        index = yosys.history.length;
-        input.val('');
-        var buffer = yosys.ys.run(command)
-        this.appendOutput(buffer);
-      }.bind(this);
-
-      var upHandler = function() {
-        if(index > 0) {
-          index--;
-        }
-        input.val(yosys.history[index]);
-      }
-
-      var downHandler = function() {
-        if(index < (yosys.history.length - 1)) {
-          index++;
-          input.val(yosys.history[index]);
-        }
-        else {
-          input.val('');
-        }
-      }
-
-      input.keydown(function(e) {
-        switch(e.which) {
-          case 13: enterHandler(); break;
-          case 38: upHandler(); break;
-          case 40: downHandler(); break;
-        }
-      });
     }
   });
 
