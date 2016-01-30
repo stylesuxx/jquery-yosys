@@ -1,6 +1,8 @@
 # jQuery yosysjs plugin
 > A jQeury plugin to easily integrate [yosysjs](http://www.clifford.at/yosys/) into your page.
 
+A live demo of the yosys jQuery plugin can be found [here](http://stylesuxx.github.io/jquery-yosys/).
+
 ## Features
 * Add and deltet files
 * Persist files between sessions
@@ -25,9 +27,6 @@ A list of events that can be listened to with an *on* handler:
 * yosysAfterInit: Fires after yosys init is done.
 
 ## Options
-### done
-Function to be called as soon as yosys is done with initialization.
-
 ### yosys
 Options to be passed to yosys directly, they may be *true* or *false* and default to false if not set:
 
