@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="../src/yosys.jquery.css">
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
+    <script type="text/javascript" src="./js/yosysjs.js"></script>
+    <script type="text/javascript" src="../src/yosys.jquery.js"></script>
+
+    <script>
+      $(document).on('ready', function() {
+        var options = {
+          yosys: {
+            verbose: false,
+            logger: false,
+            echo: false
+          }
+        }
+
+        $('#yosys').yosys(options).on('yosysAfterInit', function() {
+          $('.alert-info').hide();
+          $(this).fadeIn('slow');
+        });
+      });
+    </script>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="alert alert-info">
+        <p>Loading yosys,...</p>
+      </div>
+
+      <div id="yosys" style="display: none;">
+        <nav class="col-md12 yosys-navigation"></nav>
+
+        <div id="output-wrapper">
+          <textarea class="yosys-output" readonly="readonly"></textarea>
+        </div>
+
+        <div id="input-wrapper" class="col-md12">
+          <div class="left"><p>yosys &gt;</p></div>
+          <div class="right"><input class="yosys-input" type="text"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
