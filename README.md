@@ -19,16 +19,21 @@ var options = {}
 $('#yosys').yosys(options);
 ```
 
+## Events
+A list of events that can be listened to with an *on* handler:
+
+* yosysAfterInit: Fires after yosys init is done.
+
 ## Options
 ### done
 Function to be called as soon as yosys is done with initialization.
 
 ### yosys
-Options to be passed to yosys directly:
+Options to be passed to yosys directly, they may be *true* or *false* and default to false if not set:
 
-* verbose: true|false
-* logprint: true|false
-* echo: true|false
+* verbose
+* logprint
+* echo
 
 ## Examples
 Check out the demo folder for an example of how to use this jQuery plugin.

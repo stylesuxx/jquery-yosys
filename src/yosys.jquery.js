@@ -272,13 +272,11 @@
 
   var pluginName = "yosys",
   defaults = {
-    done: null,
     yosis: {
       verbose: false,
       logger: false,
       echo: false
-    },
-    navigation: true
+    }
   };
 
   function Plugin(element, options) {
@@ -320,7 +318,7 @@
           output.append(ys.run(command));
         });
 
-        this.settings.done(this.element);
+        $parent.trigger('yosysAfterInit');
       }.bind(this));
     },
 

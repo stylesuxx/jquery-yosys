@@ -11,10 +11,6 @@
     <script>
       $(document).on('ready', function() {
         var options = {
-          done: function(element) {
-            $('.alert-info').hide();
-            $(element).fadeIn('slow');
-          },
           yosys: {
             verbose: false,
             logger: false,
@@ -22,7 +18,10 @@
           }
         }
 
-        $('#yosys').yosys(options);
+        $('#yosys').yosys(options).on('yosysAfterInit', function() {
+          $('.alert-info').hide();
+          $(this).fadeIn('slow');
+        });
       });
     </script>
   </head>

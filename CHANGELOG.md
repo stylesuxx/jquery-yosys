@@ -11,3 +11,4 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Pass options to yosys
 - Add multiple files
 - Save files to local storage
+- yosysAfterInit event
