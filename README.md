@@ -1,15 +1,15 @@
 # jQuery yosysjs plugin
 > A jQeury plugin to easily integrate [yosysjs](http://www.clifford.at/yosys/) into your page.
 
-## Structure
-The container has to have at least the following Structure:
+## Features
+* Add and deltet files
+* Persist files between sessions
+* Fullscreen mode
+* Command history
 
+## Structure
 ```HTML
-<div id="yosys">
-  <nav class="yosys-navigation"></div>
-  <textarea class="yosys-output"></textarea>
-  <input class="yosys-input">
-</div>
+<div id="yosys"></div>
 ```
 
 After including the plugin in your project you can simply invoke:

@@ -64,6 +64,7 @@
   }
 
   function Editor(ys) {
+    var that = this;
     this.ys = ys;
     this.files = {};
     this.storage = (localStorage) ? true : false;
@@ -100,7 +101,11 @@
     };
 
     this.deleteFile = function(name) {
-      // TODO
+      delete this.files[name];
+
+      if(this.storage) {
+        this.saveFiles();
+      }
     };
 
     this.loadFiles = function() {
@@ -156,7 +161,8 @@
       for(var i in files) {
         var name = files[i];
         var $file = $('<div/>', { class: 'file'})
-          .append($('<a/>', { href: '#', file: name, text: name }));
+          .append($('<a/>', { href: '#', class: 'open', file: name, text: name }))
+          .append($('<a/>', { href: '#', class: 'delete glyphicon glyphicon-trash', file: name }));
 
         that.registerFileHandlers($file);
         $files.append($file);
@@ -166,7 +172,7 @@
     };
 
     this.registerFileHandlers = function($file) {
-      $('a', $file).on('click', function(e) {
+      $('a.open', $file).on('click', function(e) {
         var file = $(this).attr('file');
         var text = editor.loadFile(file);
         var $editor = $('<div/>', { class: 'editor' })
@@ -175,9 +181,11 @@
         $parent.append($editor);
         $editor.fadeIn('fast');
         $('textarea', $editor).focus();
+
         $('textarea', $editor).on('click', function() {
           return false;
         });
+
         $editor.on('click', function() {
           $editor.fadeOut('fast', function() {
             var text = $('textarea', $editor).val();
@@ -185,6 +193,14 @@
             $editor.remove();
           });
         })
+      });
+
+      $('a.delete', $file).on('click', function(e) {
+        var file = $(this).attr('file');
+
+        editor.deleteFile(file);
+        $('.file-list', $navigation).remove();
+        $navigation.prepend(that.buildFileList());
       });
     };
 
@@ -216,9 +232,8 @@
 
             editor.addFile(name);
             $('.file-list', $navigation).remove();
-            $navigation.prepend(buildFileList());
-            editor.show(name);
-            //$('a[file="' + name + '"]', $element).click();
+            $navigation.prepend(that.buildFileList());
+            $('a.open[file="' + name + '"]', $navigation).click();
           }
 
           return false;

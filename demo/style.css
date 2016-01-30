@@ -151,6 +151,7 @@ body {
 }
 
 #yosys .yosys-navigation .file {
+  position: relative;
   float: left;
   border-right: 1px solid #666;
   padding-right: 10px;
@@ -159,4 +160,21 @@ body {
 #yosys .yosys-navigation .file a,
 #yosys .yosys-navigation .file a:hover {
   text-decoration: none;
+}
+
+#yosys .yosys-navigation .file:hover a {
+  opacity: 1.0;
+}
+
+#yosys .yosys-navigation .file:hover a.delete {
+  display: block;
+}
+
+#yosys .yosys-navigation .file a.delete {
+  display: none;
+  padding: 0px;
+  margin: 0px;
+  padding-top: 4px;
+  width: 100%;
+  text-align: right;
 }
