@@ -289,37 +289,42 @@
 
   $.extend(Plugin.prototype, {
     init: function() {
-      this.yosys = {
-        elements: {
-          navigation: $('.yosys-navigation', this.element),
-          output: $('textarea.yosys-output', this.element),
-          input: $('input.yosys-input', this.element),
-        }
-      };
-
-      if(this.yosys.elements.output.length < 1) {
-        throw('Error: No textarea with yosys-output class found!');
-      }
-      if(this.yosys.elements.input.length < 1) {
-        throw('Error: No input with yosys-input class found!');
-      }
-      if(this.yosys.elements.navigation.length < 1) {
-        throw('Error: No container with yosys-navigation class found!');
-      }
+      var $parent = $(this.element);
+      $parent.append(this.buildDom());
 
       this.initYosys(function(ys) {
-        var $parent = $(this.element);
-        var $navigation = this.yosys.elements.navigation;
+        var $navigation = $('.yosys-navigation', $parent);
+        var $output = $('textarea.yosys-output', $parent);
+        var $input = $('input.yosys-input', $parent);
 
         var editor = new Editor(ys);
         var navigation = new Navigation($parent, $navigation, editor);
-        var output = new Output(this.yosys.elements.output, ys.print_buffer);
-        var input = new Input(this.yosys.elements.input, function(command) {
+        var output = new Output($output, ys.print_buffer);
+        var input = new Input($input, function(command) {
           output.append(ys.run(command));
         });
 
         $parent.trigger('yosysAfterInit');
       }.bind(this));
+    },
+
+    /*
+      <div id="input-wrapper" class="col-md12">
+        <div class="left"><p>yosys &gt;</p></div>
+        <div class="right"><input class="yosys-input" type="text"></div>
+      </div>
+      */
+    buildDom() {
+      var $wrapper = $('<div>')
+        .append($('<nav/>', { class: 'yosys-navigation' }))
+        .append($('<div>', { class: 'output-wrapper'})
+          .append($('<textarea/>', { class: 'yosys-output', readonly: 'readonly' })))
+        .append($('<div/>', { class: 'input-wrapper' })
+          .append($('<div/>', { class: 'left', text: 'yosys >' }))
+          .append($('<div/>', { class: 'right' })
+            .append($('<input/>', { class: 'yosys-input', type: 'text' }))));
+
+      return $wrapper.html();
     },
 
     initYosys(cb) {
@@ -331,7 +336,7 @@
       ys.verbose = this.settings.yosys.verbose;
       ys.logprint= this.settings.yosys.logprint;
       ys.echo = this.settings.yosys.echo;
-      this.yosys.ys = ys;
+      //this.yosys.ys = ys;
     }
   });
 
