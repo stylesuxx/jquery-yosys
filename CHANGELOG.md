@@ -10,3 +10,4 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Demo
 - Pass options to yosys
 - Add multiple files
+- Save files to local storage

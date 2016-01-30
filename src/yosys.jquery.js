@@ -63,6 +63,198 @@
     }
   }
 
+  function Editor(ys) {
+    this.ys = ys;
+    this.files = {};
+    this.storage = (localStorage) ? true : false;
+
+    this.getFileNames = function() {
+      var names = [];
+      for(name in this.files) {
+        names.push(name);
+      }
+
+      return names;
+    }
+
+    this.loadFile = function(name) {
+      var file = this.files[name];
+      return file.load();
+    }
+
+    this.saveFile = function(name, content) {
+      var file = this.files[name];
+      file.save(content);
+      if(this.storage) {
+        this.saveFiles();
+      }
+    }
+
+    this.addFile = function(name) {
+      var file = new File(name, this.ys);
+      this.files[name] = file;
+
+      if(this.storage) {
+        this.saveFiles();
+      }
+    };
+
+    this.deleteFile = function(name) {
+      // TODO
+    };
+
+    this.loadFiles = function() {
+      if(localStorage.getItem('files')) {
+        var files =  JSON.parse(localStorage.getItem('files'));
+        for(name in files) {
+          var file = new File(name, ys);
+          file.save(files[name]);
+          this.files[name] = file;
+        }
+      }
+    };
+
+    this.saveFiles = function() {
+      var files = {};
+      for(name in this.files) {
+        files[name] = this.files[name].load();
+      }
+      localStorage.setItem('files', JSON.stringify(files));
+    };
+
+    if(this.storage) {
+      this.loadFiles();
+    }
+  }
+
+  function File(name, ys) {
+    this.name = name;
+    this.ys = ys;
+
+    this.save = function(content) {
+      this.ys.write_file(this.name, content);
+    };
+
+    this.load = function() {
+      return this.ys.read_file(this.name);
+    };
+
+    this.save('');
+  }
+
+  function Navigation($parent, $navigation, editor) {
+    var that = this;
+    this.renderNavigation = function() {
+      $navigation.append(this.buildFileList());
+      $navigation.append(this.buildNewFile());
+      $navigation.append(this.buildResize());
+    };
+
+    this.buildFileList = function() {
+      var $files = $('<div/>', { class: 'file-list' });
+      var files = editor.getFileNames();
+      for(var i in files) {
+        var name = files[i];
+        var $file = $('<div/>', { class: 'file'})
+          .append($('<a/>', { href: '#', file: name, text: name }));
+
+        that.registerFileHandlers($file);
+        $files.append($file);
+      };
+
+      return $files
+    };
+
+    this.registerFileHandlers = function($file) {
+      $('a', $file).on('click', function(e) {
+        var file = $(this).attr('file');
+        var text = editor.loadFile(file);
+        var $editor = $('<div/>', { class: 'editor' })
+          .append($('<textarea/>').val(text)).hide();
+
+        $parent.append($editor);
+        $editor.fadeIn('fast');
+        $('textarea', $editor).focus();
+        $('textarea', $editor).on('click', function() {
+          return false;
+        });
+        $editor.on('click', function() {
+          $editor.fadeOut('fast', function() {
+            var text = $('textarea', $editor).val();
+            editor.saveFile(file, text)
+            $editor.remove();
+          });
+        })
+      });
+    };
+
+    this.buildNewFile = function() {
+      var $newFile = $('<div/>', { class: 'resize' })
+        .append($('<a/>', { href: '#', class: 'new-file' })
+          .append($('<span/>', { class: 'glyphicon glyphicon-plus' })))
+        .append($('<div/>', { class: 'add-file', style: 'display: none;' })
+          .append($('<input/>', { placeholder: 'filename [ENTER]' })));
+
+      this.registerNewFileHandlers($newFile);
+
+      return $newFile;
+    };
+
+    this.registerNewFileHandlers = function($element) {
+      var buildFileList = this.buildFileList;
+      $('.new-file', $element).on('click', function() {
+        $('.add-file', $element).show();
+        $('.add-file input', $element).focus();
+      });
+
+      $('.add-file input', $element).keydown(function(e) {
+        if(e.which == 13) {
+          var name = $(this).val();
+          if(name != '' && editor.getFileNames().indexOf(name) < 0) {
+            $('.add-file', $element).hide();
+            $('.add-file input', $element).val('');
+
+            editor.addFile(name);
+            $('.file-list', $navigation).remove();
+            $navigation.prepend(buildFileList());
+            editor.show(name);
+            //$('a[file="' + name + '"]', $element).click();
+          }
+
+          return false;
+        }
+      });
+    };
+
+    this.buildResize = function() {
+      var $resize = $('<div/>', { class: 'resize' })
+        .append($('<a/>', { href: '#', class: 'fullscreen' })
+          .append($('<span/>', { class: 'glyphicon glyphicon-resize-full' })))
+        .append($('<a/>', { href: '#', class: 'smallscreen', style: 'display: none;' })
+          .append($('<span/>', { class: 'glyphicon glyphicon-resize-small' })));
+
+      this.registerResizeHandlers($resize);
+
+      return $resize;
+    };
+
+    this.registerResizeHandlers = function($element) {
+      $('.fullscreen', $element).on('click', function() {
+        $(this).hide();
+        $('.smallscreen', $element).show();
+        $parent.addClass('fullscreen');
+      });
+
+      $('.smallscreen', $element).on('click', function() {
+        $(this).hide();
+        $('.fullscreen', $element).show();
+        $parent.removeClass('fullscreen');
+      });
+    }
+
+    this.renderNavigation();
+  }
+
   var pluginName = "yosys",
   defaults = {
     done: null,
@@ -89,9 +281,7 @@
           navigation: $('.yosys-navigation', this.element),
           output: $('textarea.yosys-output', this.element),
           input: $('input.yosys-input', this.element),
-        },
-        history: [],
-        files: {}
+        }
       };
 
       if(this.yosys.elements.output.length < 1) {
@@ -105,134 +295,18 @@
       }
 
       this.initYosys(function(ys) {
-        var ys = ys;
+        var $parent = $(this.element);
+        var $navigation = this.yosys.elements.navigation;
+
+        var editor = new Editor(ys);
+        var navigation = new Navigation($parent, $navigation, editor);
         var output = new Output(this.yosys.elements.output, ys.print_buffer);
         var input = new Input(this.yosys.elements.input, function(command) {
           output.append(ys.run(command));
         });
-        this.initNavigation();
+
         this.settings.done(this.element);
       }.bind(this));
-    },
-
-    initNavigation() {
-      var that = this;
-      var parent = this.element;
-      var $newFile = $('<div/>', { class: 'resize' })
-        .append($('<a/>', { href: '#', class: 'new-file' })
-          .append($('<span/>', { class: 'glyphicon glyphicon-plus' })));
-
-      var $resize = $('<div/>', { class: 'resize' })
-        .append($('<a/>', { href: '#', class: 'fullscreen' })
-          .append($('<span/>', { class: 'glyphicon glyphicon-resize-full' })))
-        .append($('<a/>', { href: '#', class: 'smallscreen', style: 'display: none;' })
-          .append($('<span/>', { class: 'glyphicon glyphicon-resize-small' })));
-
-      $('.new-file', $newFile).on('click', function() {
-        if($('.add-file', parent).length > 0) return;
-
-        var $addFile = $('<div/>', { class: 'add-file'} )
-          .append($('<input/>', { placeholder: 'filename [ENTER]' }))
-        $(parent).append($addFile);
-        $('input', $addFile).focus();
-
-        $('input', $addFile).keydown(function(e) {
-          if(e.which == 13) {
-            var name = $('input', $addFile).val();
-            if(name != "") {
-              that.addFile(name, function() {
-                $addFile.remove();
-              });
-            }
-            return false;
-          }
-        });
-      });
-
-      $('.fullscreen', $resize).on('click', function() {
-        $(this).hide();
-        $('.smallscreen', $resize).show();
-        $(parent).addClass('fullscreen');
-      });
-
-      $('.smallscreen', $resize).on('click', function() {
-        $(this).hide();
-        $('.fullscreen', $resize).show();
-        $(parent).removeClass('fullscreen');
-      });
-
-      this.yosys.elements.navigation.append($newFile);
-      this.yosys.elements.navigation.append($resize);
-    },
-
-    addFile(name, cb) {
-      var that = this;
-      var ys = this.yosys.ys;
-      var parent = this.element;
-      var files = this.yosys.files;
-      var navigation = this.yosys.elements.navigation;
-
-      if(!files[name]) {
-        files[name] = true;
-        ys.write_file(name, '');
-        var $file = $('<div/>', { class: 'file'})
-          .append($('<a/>', { href: '#', file: name, text: name }));
-        navigation.prepend($file);
-
-        $('a', $file).on('click', function(e) {
-          var file = $(this).attr('file');
-          var text = that.loadFile(file);
-          var $editor = $('<div/>', { class: 'editor' })
-            .append($('<textarea/>').val(text)).hide();
-
-          $(parent).append($editor);
-          $editor.fadeIn('fast');
-          $('textarea', $editor).focus();
-          $('textarea', $editor).on('click', function() {
-            return false;
-          });
-          $editor.on('click', function() {
-            $editor.fadeOut('fast', function() {
-              var text = $('textarea', $editor).val();
-              that.saveFile(file, text)
-              $editor.remove();
-            });
-          })
-        });
-        cb();
-      }
-
-      $('a', $file).click();
-    },
-
-    saveFile(name, content) {
-      var ys = this.yosys.ys;
-      ys.write_file(name, content);
-
-      if(localStorage) {
-        var files =  localStorage.getItem('files') ? JSON.parse(localStorage.getItem('files')) : {};
-        files[name] = content;
-        localStorage.setItem('files', JSON.stringify(files));
-      }
-    },
-
-    loadFile(name) {
-      var ys = this.yosys.ys;
-      return ys.read_file(name);
-    },
-
-    loadSavedFiles() {
-      if(localStorage) {
-        // Load from local store
-        var files = localStorage.getItem('files') ? JSON.parse(localStorage.getItem('files')) : {};
-
-        // Write to yosys fs
-        // Append menu item
-      }
-    },
-
-    deleteFile(name) {
-
     },
 
     initYosys(cb) {
