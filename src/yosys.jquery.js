@@ -296,13 +296,15 @@
     };
 
     this.registerResizeHandlers = function($element) {
-      $('.fullscreen', $element).on('click', function() {
+      $('.fullscreen', $element).on('click', function(e) {
+        e.preventDefault();
         $(this).hide();
         $('.smallscreen', $element).show();
         $parent.addClass('fullscreen');
       });
 
-      $('.smallscreen', $element).on('click', function() {
+      $('.smallscreen', $element).on('click', function(e) {
+        e.preventDefault();
         $(this).hide();
         $('.fullscreen', $element).show();
         $parent.removeClass('fullscreen');
