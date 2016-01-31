@@ -48,12 +48,6 @@ body {
   margin-top: -40px;
 }
 
-/*
-#yosys .input-wrapper p {
-  margin: 0px;
-}
-*/
-
 #yosys .input-wrapper .left {
   width: 105px;
   text-align: center
@@ -164,7 +158,7 @@ body {
   text-decoration: none;
 }
 
-#yosys .yosys-navigation .file:hover a {
+#yosys .yosys-navigation .file:hover a.open {
   opacity: 1.0;
 }
 
@@ -179,4 +173,20 @@ body {
   padding-top: 4px;
   width: 100%;
   text-align: right;
+}
+
+#yosys .yosys-dotfile {
+  display: none;
+  width:100%;
+  height: 100%;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  z-index: 10;
+  padding: 25px;
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+#yosys .yosys-dotfile svg {
+  width: 100%
 }

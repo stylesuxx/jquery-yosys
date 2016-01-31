@@ -129,6 +129,15 @@
 
     if(this.storage) {
       this.loadFiles();
+    };
+
+    this.getDotfile = function() {
+      var text = ys.read_file('show.dot');
+      return YosysJS.dot_to_svg(text);
+    }
+
+    this.hasDotfile = function() {
+      return (ys.read_file('show.dot') != '');
     }
   }
 
@@ -150,9 +159,42 @@
   function Navigation($parent, $navigation, editor) {
     var that = this;
     this.renderNavigation = function() {
+      $navigation.append(this.buildDotItem());
       $navigation.append(this.buildFileList());
       $navigation.append(this.buildNewFile());
       $navigation.append(this.buildResize());
+    };
+
+    this.buildDotItem = function() {
+      var $dotfile = $('<div/>', { class: 'dot-file file', style: 'display: none;' })
+        .append($('<a/>', { href: '#', text: 'Show dot file' }))
+
+      this.registerDotfileHandlers($dotfile);
+
+      return $dotfile;
+    }
+
+    this.checkDotfile = function() {
+      $('.dot-file', $navigation).hide();
+      if(editor.hasDotfile()) {
+        $('.dot-file', $navigation).show();
+        var svg = editor.getDotfile();
+        $('.yosys-dotfile', $parent).html(svg);
+      }
+    }
+
+    this.registerDotfileHandlers = function($dotfile) {
+      $('a', $dotfile).on('click', function() {
+        $('.yosys-dotfile', $parent).fadeIn();
+      });
+
+      $('.yosys-dotfile svg', $parent).on('click', function() {
+        return false;
+      });
+
+      $('.yosys-dotfile', $parent).on('click', function() {
+        $('.yosys-dotfile', $parent).fadeOut();
+      });
     };
 
     this.buildFileList = function() {
@@ -272,7 +314,7 @@
 
   var pluginName = "yosys",
   defaults = {
-    yosis: {
+    yosys: {
       verbose: false,
       logger: false,
       echo: false
@@ -302,20 +344,16 @@
         var output = new Output($output, ys.print_buffer);
         var input = new Input($input, function(command) {
           output.append(ys.run(command));
+          navigation.checkDotfile();
         });
 
         $parent.trigger('yosysAfterInit');
       }.bind(this));
     },
 
-    /*
-      <div id="input-wrapper" class="col-md12">
-        <div class="left"><p>yosys &gt;</p></div>
-        <div class="right"><input class="yosys-input" type="text"></div>
-      </div>
-      */
     buildDom() {
       var $wrapper = $('<div>')
+        .append($('<div/>', { class: 'yosys-dotfile' }))
         .append($('<nav/>', { class: 'yosys-navigation' }))
         .append($('<div>', { class: 'output-wrapper'})
           .append($('<textarea/>', { class: 'yosys-output', readonly: 'readonly' })))
@@ -336,7 +374,6 @@
       ys.verbose = this.settings.yosys.verbose;
       ys.logprint= this.settings.yosys.logprint;
       ys.echo = this.settings.yosys.echo;
-      //this.yosys.ys = ys;
     }
   });
 
