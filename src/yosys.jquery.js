@@ -265,7 +265,7 @@
 
     this.registerNewFileHandlers = function($element) {
       var buildFileList = this.buildFileList;
-      $('.new-file', $element).on('click', function() {
+      $('.new-file', $element).on('click', function(e) {
         e.preventDefault();
         $('.add-file', $element).show();
         $('.add-file input', $element).focus();
