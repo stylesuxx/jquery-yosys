@@ -184,15 +184,17 @@
     }
 
     this.registerDotfileHandlers = function($dotfile) {
-      $('a', $dotfile).on('click', function() {
+      $('a', $dotfile).on('click', function(e) {
+        e.preventDefault();
         $('.yosys-dotfile', $parent).fadeIn();
       });
 
-      $('.yosys-dotfile svg', $parent).on('click', function() {
+      $('.yosys-dotfile svg', $parent).on('click', function(e) {
         return false;
       });
 
-      $('.yosys-dotfile', $parent).on('click', function() {
+      $('.yosys-dotfile', $parent).on('click', function(e) {
+        e.preventDefault();
         $('.yosys-dotfile', $parent).fadeOut();
       });
     };
@@ -215,6 +217,7 @@
 
     this.registerFileHandlers = function($file) {
       $('a.open', $file).on('click', function(e) {
+        e.preventDefault();
         var file = $(this).attr('file');
         var text = editor.loadFile(file);
         var $editor = $('<div/>', { class: 'editor' })
@@ -228,7 +231,8 @@
           return false;
         });
 
-        $editor.on('click', function() {
+        $editor.on('click', function(e) {
+          e.preventDefault();
           $editor.fadeOut('fast', function() {
             var text = $('textarea', $editor).val();
             editor.saveFile(file, text)
@@ -238,6 +242,7 @@
       });
 
       $('a.delete', $file).on('click', function(e) {
+        e.preventDefault();
         var file = $(this).attr('file');
 
         editor.deleteFile(file);
@@ -261,6 +266,7 @@
     this.registerNewFileHandlers = function($element) {
       var buildFileList = this.buildFileList;
       $('.new-file', $element).on('click', function() {
+        e.preventDefault();
         $('.add-file', $element).show();
         $('.add-file input', $element).focus();
       });
