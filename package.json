@@ -1,6 +1,6 @@
 {
   "name": "jquery-yosys",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "jQuery wrapper for yosysjs",
   "main": "index.js",
   "scripts": {
