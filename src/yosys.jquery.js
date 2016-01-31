@@ -1,60 +1,324 @@
-/*
-var ys = null;
-$.md.stage('all_ready').subscribe(function(done) {
-  var location = window.location.href.split('/');
-  var page = location[location.length - 1];
-
-  if(page === 'yosys.md') {
-    var initNavigation = function($navigation) {
-      $('a.fullscreen', $navigation).on('click', function(e) {
-        e.preventDefault();
-        $(this).hide();
-        $(this).siblings('.smallscreen').show();
-
-        $yosys = $(this).closest('#yosys-wrapper');
-        $yosys.addClass('fullscreen');
-
-        var height = $(window).height() - $('#input-wrapper', $yosys).height();
-        $('textarea#yosys-output', $yosys).height(height);
-        $('#input-wrapper input', $yosys).focus();
-      });
-
-      $('a.smallscreen', $navigation).on('click', function(e) {
-        e.preventDefault();
-        $(this).hide();
-        $(this).siblings('.fullscreen').show();
-
-        $yosys = $(this).closest('#yosys-wrapper');
-        $yosys.removeClass('fullscreen');
-
-        $('textarea#yosys-output', $yosys).height(480);
-        $('#input-wrapper input', $yosys).focus();
-      });
-    }
-
-    var appendOutput = function (output) {
-      var $output = $('textarea#yosys-output');
-      var text = $output.val();
-      text += '\n\n' + output.trim();
-      $output.val(text);
-
-      $output.scrollTop($output[0].scrollHeight - $output.height());
-    }
-  }
-
-  done();
-});
-*/
-
-// the semi-colon before function invocation is a safety net against concatenated
-// scripts and/or other plugins which may not be closed properly.
 ;(function($, window, document, undefined) {
   "use strict";
 
+  function Input($input, commandCB) {
+    this.$input = $input;
+    this.history = [];
+    this.index = history.length;
+    this.commandCB = commandCB;
+
+    this.registerHandlers = function() {
+      this.$input.keydown(function(e) {
+        switch(e.which) {
+          case 13: this.enterHandler(); break;
+          case 38: this.upHandler(); break;
+          case 40: this.downHandler(); break;
+        }
+      }.bind(this));
+    };
+
+    this.enterHandler = function() {
+      var command = this.$input.val();
+      if(command == '') return;
+
+      this.history.push(command);
+      this.index = this.history.length - 1;
+      this.$input.val('');
+      this.commandCB(command);
+    }
+
+    this.upHandler = function() {
+      if(this.index > -1) {
+        this.$input.val(this.history[this.index]);
+        this.index = (this.index > 0) ? --this.index : 0;
+      }
+    }
+
+    this.downHandler = function() {
+      var command = '';
+      if(this.index < (this.history.length - 1)) {
+        command = this.history[++this.index];
+      }
+      this.$input.val(command);
+    }
+
+    this.registerHandlers();
+  }
+
+  function Output($output, text) {
+    this.$output = $output;
+    this.$output.val(text);
+
+    this.append = function(text) {
+      var current = this.$output.val();
+      current +=  '\n\n' + text.trim();
+      this.$output.val(current);
+
+      var scrollTo = this.$output[0].scrollHeight - this.$output.height();
+      this.$output.scrollTop(scrollTo);
+    };
+
+    this.clear = function() {
+      this.$output.val('');
+    }
+  }
+
+  function Editor(ys) {
+    var that = this;
+    this.ys = ys;
+    this.files = {};
+    this.storage = (localStorage) ? true : false;
+
+    this.getFileNames = function() {
+      var names = [];
+      for(name in this.files) {
+        names.push(name);
+      }
+
+      return names;
+    }
+
+    this.loadFile = function(name) {
+      var file = this.files[name];
+      return file.load();
+    }
+
+    this.saveFile = function(name, content) {
+      var file = this.files[name];
+      file.save(content);
+      if(this.storage) {
+        this.saveFiles();
+      }
+    }
+
+    this.addFile = function(name) {
+      var file = new File(name, this.ys);
+      this.files[name] = file;
+
+      if(this.storage) {
+        this.saveFiles();
+      }
+    };
+
+    this.deleteFile = function(name) {
+      delete this.files[name];
+
+      if(this.storage) {
+        this.saveFiles();
+      }
+    };
+
+    this.loadFiles = function() {
+      if(localStorage.getItem('files')) {
+        var files =  JSON.parse(localStorage.getItem('files'));
+        for(name in files) {
+          var file = new File(name, ys);
+          file.save(files[name]);
+          this.files[name] = file;
+        }
+      }
+    };
+
+    this.saveFiles = function() {
+      var files = {};
+      for(name in this.files) {
+        files[name] = this.files[name].load();
+      }
+      localStorage.setItem('files', JSON.stringify(files));
+    };
+
+    if(this.storage) {
+      this.loadFiles();
+    };
+
+    this.getDotfile = function() {
+      var text = ys.read_file('show.dot');
+      return YosysJS.dot_to_svg(text);
+    }
+
+    this.hasDotfile = function() {
+      return (ys.read_file('show.dot') != '');
+    }
+  }
+
+  function File(name, ys) {
+    this.name = name;
+    this.ys = ys;
+
+    this.save = function(content) {
+      this.ys.write_file(this.name, content);
+    };
+
+    this.load = function() {
+      return this.ys.read_file(this.name);
+    };
+
+    this.save('');
+  }
+
+  function Navigation($parent, $navigation, editor) {
+    var that = this;
+    this.renderNavigation = function() {
+      $navigation.append(this.buildDotItem());
+      $navigation.append(this.buildFileList());
+      $navigation.append(this.buildNewFile());
+      $navigation.append(this.buildResize());
+    };
+
+    this.buildDotItem = function() {
+      var $dotfile = $('<div/>', { class: 'dot-file file', style: 'display: none;' })
+        .append($('<a/>', { href: '#', text: 'Show dot file' }))
+
+      this.registerDotfileHandlers($dotfile);
+
+      return $dotfile;
+    }
+
+    this.checkDotfile = function() {
+      $('.dot-file', $navigation).hide();
+      if(editor.hasDotfile()) {
+        $('.dot-file', $navigation).show();
+        var svg = editor.getDotfile();
+        $('.yosys-dotfile', $parent).html(svg);
+      }
+    }
+
+    this.registerDotfileHandlers = function($dotfile) {
+      $('a', $dotfile).on('click', function() {
+        $('.yosys-dotfile', $parent).fadeIn();
+      });
+
+      $('.yosys-dotfile svg', $parent).on('click', function() {
+        return false;
+      });
+
+      $('.yosys-dotfile', $parent).on('click', function() {
+        $('.yosys-dotfile', $parent).fadeOut();
+      });
+    };
+
+    this.buildFileList = function() {
+      var $files = $('<div/>', { class: 'file-list' });
+      var files = editor.getFileNames();
+      for(var i in files) {
+        var name = files[i];
+        var $file = $('<div/>', { class: 'file'})
+          .append($('<a/>', { href: '#', class: 'open', file: name, text: name }))
+          .append($('<a/>', { href: '#', class: 'delete glyphicon glyphicon-trash', file: name }));
+
+        that.registerFileHandlers($file);
+        $files.append($file);
+      };
+
+      return $files
+    };
+
+    this.registerFileHandlers = function($file) {
+      $('a.open', $file).on('click', function(e) {
+        var file = $(this).attr('file');
+        var text = editor.loadFile(file);
+        var $editor = $('<div/>', { class: 'editor' })
+          .append($('<textarea/>').val(text)).hide();
+
+        $parent.append($editor);
+        $editor.fadeIn('fast');
+        $('textarea', $editor).focus();
+
+        $('textarea', $editor).on('click', function() {
+          return false;
+        });
+
+        $editor.on('click', function() {
+          $editor.fadeOut('fast', function() {
+            var text = $('textarea', $editor).val();
+            editor.saveFile(file, text)
+            $editor.remove();
+          });
+        })
+      });
+
+      $('a.delete', $file).on('click', function(e) {
+        var file = $(this).attr('file');
+
+        editor.deleteFile(file);
+        $('.file-list', $navigation).remove();
+        $navigation.prepend(that.buildFileList());
+      });
+    };
+
+    this.buildNewFile = function() {
+      var $newFile = $('<div/>', { class: 'resize' })
+        .append($('<a/>', { href: '#', class: 'new-file' })
+          .append($('<span/>', { class: 'glyphicon glyphicon-plus' })))
+        .append($('<div/>', { class: 'add-file', style: 'display: none;' })
+          .append($('<input/>', { placeholder: 'filename [ENTER]' })));
+
+      this.registerNewFileHandlers($newFile);
+
+      return $newFile;
+    };
+
+    this.registerNewFileHandlers = function($element) {
+      var buildFileList = this.buildFileList;
+      $('.new-file', $element).on('click', function() {
+        $('.add-file', $element).show();
+        $('.add-file input', $element).focus();
+      });
+
+      $('.add-file input', $element).keydown(function(e) {
+        if(e.which == 13) {
+          var name = $(this).val();
+          if(name != '' && editor.getFileNames().indexOf(name) < 0) {
+            $('.add-file', $element).hide();
+            $('.add-file input', $element).val('');
+
+            editor.addFile(name);
+            $('.file-list', $navigation).remove();
+            $navigation.prepend(that.buildFileList());
+            $('a.open[file="' + name + '"]', $navigation).click();
+          }
+
+          return false;
+        }
+      });
+    };
+
+    this.buildResize = function() {
+      var $resize = $('<div/>', { class: 'resize' })
+        .append($('<a/>', { href: '#', class: 'fullscreen' })
+          .append($('<span/>', { class: 'glyphicon glyphicon-resize-full' })))
+        .append($('<a/>', { href: '#', class: 'smallscreen', style: 'display: none;' })
+          .append($('<span/>', { class: 'glyphicon glyphicon-resize-small' })));
+
+      this.registerResizeHandlers($resize);
+
+      return $resize;
+    };
+
+    this.registerResizeHandlers = function($element) {
+      $('.fullscreen', $element).on('click', function() {
+        $(this).hide();
+        $('.smallscreen', $element).show();
+        $parent.addClass('fullscreen');
+      });
+
+      $('.smallscreen', $element).on('click', function() {
+        $(this).hide();
+        $('.fullscreen', $element).show();
+        $parent.removeClass('fullscreen');
+      });
+    }
+
+    this.renderNavigation();
+  }
+
   var pluginName = "yosys",
   defaults = {
-    done: null,
-    propertyName: "value"
+    yosys: {
+      verbose: false,
+      logger: false,
+      echo: false
+    }
   };
 
   function Plugin(element, options) {
@@ -67,83 +331,49 @@ $.md.stage('all_ready').subscribe(function(done) {
 
   $.extend(Plugin.prototype, {
     init: function() {
-      this.yosys = {
-        elements: {
-          output: $('textarea.yosys-output', this.element),
-          input: $('input.yosys-input', this.element)
-        },
-        history: []
-      };
+      var $parent = $(this.element);
+      $parent.append(this.buildDom());
 
-      if(this.yosys.elements.output.length < 1) {
-        throw('Error: No textarea with yosys-output class found!');
-      }
-      if(this.yosys.elements.input.length < 1) {
-        throw('Error: No input with yosys-input class found!');
-      }
+      this.initYosys(function(ys) {
+        var $navigation = $('.yosys-navigation', $parent);
+        var $output = $('textarea.yosys-output', $parent);
+        var $input = $('input.yosys-input', $parent);
 
-      this.initYosys(function() {
-        this.attachInputHandler();
-        this.settings.done(this.element);
+        var editor = new Editor(ys);
+        var navigation = new Navigation($parent, $navigation, editor);
+        var output = new Output($output, ys.print_buffer);
+        var input = new Input($input, function(command) {
+          output.append(ys.run(command));
+          navigation.checkDotfile();
+        });
+
+        $parent.trigger('yosysAfterInit');
       }.bind(this));
     },
+
+    buildDom() {
+      var $wrapper = $('<div>')
+        .append($('<div/>', { class: 'yosys-dotfile' }))
+        .append($('<nav/>', { class: 'yosys-navigation' }))
+        .append($('<div>', { class: 'output-wrapper'})
+          .append($('<textarea/>', { class: 'yosys-output', readonly: 'readonly' })))
+        .append($('<div/>', { class: 'input-wrapper' })
+          .append($('<div/>', { class: 'left', text: 'yosys >' }))
+          .append($('<div/>', { class: 'right' })
+            .append($('<input/>', { class: 'yosys-input', type: 'text' }))));
+
+      return $wrapper.html();
+    },
+
     initYosys(cb) {
       YosysJS.load_viz();
       var ys = YosysJS.create('ys_iframe', function() {
-        this.appendOutput(ys.print_buffer);
-        cb();
+        cb(ys);
       }.bind(this));
-      ys.verbose = true;
-      this.yosys.ys = ys;
-    },
-    appendOutput(buffer) {
-      var output = this.yosys.elements.output;
-      var current = output.val();
-      current += '\n\n' + buffer.trim();
-      output.val(current);
 
-      output.scrollTop(output[0].scrollHeight - output.height());
-    },
-    attachInputHandler() {
-      var yosys = this.yosys;
-      var input = yosys.elements.input;
-
-      var index = 0;
-      var enterHandler = function() {
-        var command = input.val();
-        if(command == '') return;
-
-        yosys.history.push(command);
-        index = yosys.history.length;
-        input.val('');
-        var buffer = yosys.ys.run(command)
-        this.appendOutput(buffer);
-      }.bind(this);
-
-      var upHandler = function() {
-        if(index > 0) {
-          index--;
-        }
-        input.val(yosys.history[index]);
-      }
-
-      var downHandler = function() {
-        if(index < (yosys.history.length - 1)) {
-          index++;
-          input.val(yosys.history[index]);
-        }
-        else {
-          input.val('');
-        }
-      }
-
-      input.keydown(function(e) {
-        switch(e.which) {
-          case 13: enterHandler(); break;
-          case 38: upHandler(); break;
-          case 40: downHandler(); break;
-        }
-      });
+      ys.verbose = this.settings.yosys.verbose;
+      ys.logprint= this.settings.yosys.logprint;
+      ys.echo = this.settings.yosys.echo;
     }
   });
 
